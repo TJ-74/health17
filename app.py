@@ -3,14 +3,74 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
+from sklearn.preprocessing import StandardScaler
+import joblib
+from sklearn.ensemble import RandomForestRegressor
 
-# Set page configuration
+# Set page configuration - MUST be the first Streamlit command
 st.set_page_config(
     page_title="Healthcare Cost Predictor",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Define the features used in the model
+FEATURES = [
+    'age', 'gender', 'race', 'ethnicity', 'income', 'encounterclass',
+    'base_encounter_cost', 'num_procedures', 'total_proc_base_cost',
+    'num_medications', 'total_med_base_cost', 'num_prior_conditions'
+]
+TARGET = 'out_of_pocket'
+
+# Load the trained model
+try:
+    model = joblib.load('random_forest_model.pkl')
+    st.sidebar.success('✅ Model loaded successfully')
+except Exception as e:
+    st.sidebar.error('❌ Error loading model: Make sure random_forest_model.pkl is in the same directory')
+    model = None
+
+# Label Encodings
+PAYER_ENCODING = {
+    'Aetna': 0,
+    'Anthem': 1,
+    'Blue Cross Blue Shield': 2,
+    'Cigna Health': 3,
+    'Dual Eligible': 4,
+    'Humana': 5,
+    'Medicaid': 6,
+    'Medicare': 7,
+    'NO_INSURANCE': 8,
+    'UnitedHealthcare': 9
+}
+
+GENDER_ENCODING = {'F': 0, 'M': 1}
+
+RACE_ENCODING = {
+    'asian': 0,
+    'black': 1,
+    'hawaiian': 2,
+    'native': 3,
+    'other': 4,
+    'white': 5
+}
+
+ETHNICITY_ENCODING = {
+    'hispanic': 0,
+    'nonhispanic': 1
+}
+
+ENCOUNTER_ENCODING = {
+    'ambulatory': 0,
+    'emergency': 1,
+    'home': 2,
+    'inpatient': 3,
+    'outpatient': 4,
+    'urgentcare': 5,
+    'virtual': 6,
+    'wellness': 7
+}
 
 # Custom CSS to make the app look more professional
 st.markdown("""
@@ -101,6 +161,14 @@ with st.sidebar:
     st.image("https://img.icons8.com/color/96/000000/hospital-2.png", width=100)
     st.markdown('<p class="custom-header" style="font-size: 1.5rem;">User Dashboard</p>', unsafe_allow_html=True)
     user_type = st.radio("Select User Type", ["Patient", "Insurance Provider"])
+    
+    # Add payer selection to sidebar
+    payer_name = st.selectbox(
+        "Insurance Provider",
+        options=list(PAYER_ENCODING.keys()),
+        index=0
+    )
+    
     st.markdown("---")
     if user_type == "Insurance Provider":
         st.markdown('<p class="subheader">Provider Analytics</p>', unsafe_allow_html=True)
@@ -113,8 +181,8 @@ with st.sidebar:
 st.markdown('<h1 class="custom-header">🏥 Healthcare Cost Predictor</h1>', unsafe_allow_html=True)
 st.markdown("""
     <div class="highlight-box">
-        <h4 style='margin-bottom: 0.5em; color: #0277BD;'>Smart Healthcare Cost Analysis</h4>
-        <p class="info-text">Empowering better healthcare decisions through predictive analytics.</p>
+        <h4 style='margin-bottom: 0.5em; color: #0277BD;'>Out-of-Pocket Cost Prediction</h4>
+        <p class="info-text">Enter your information to predict expected out-of-pocket healthcare costs.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -123,193 +191,223 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.subheader("Patient Demographics")
+    st.subheader("Demographics")
     age = st.number_input("Age", min_value=0, max_value=120, value=30)
-    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-    race = st.selectbox("Race", ["White", "Black", "Asian", "Native", "Other"])
-    ethnicity = st.selectbox("Ethnicity", ["Hispanic", "Non-Hispanic"])
-    income = st.number_input("Annual Income ($)", min_value=0, value=50000)
+    gender = st.selectbox("Gender", ["F", "M"])
+    race = st.selectbox("Race", list(RACE_ENCODING.keys()), format_func=lambda x: x.capitalize())
+    ethnicity = st.selectbox("Ethnicity", list(ETHNICITY_ENCODING.keys()), format_func=lambda x: x.capitalize())
+    income = st.number_input("Annual Income ($)", min_value=0, value=50000, step=1000)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.subheader("Encounter Details")
-    encounter_class = st.selectbox("Encounter Class", ["Inpatient", "Outpatient", "Emergency", "Urgent Care"])
-    code = st.text_input("Encounter Code (CPT/SNOMED)")
-    reason_code = st.text_input("Reason Code")
-    base_encounter_cost = st.number_input("Base Encounter Cost ($)", min_value=0.0, value=100.0)
-    payer_name = st.selectbox("Insurance Provider", ["Medicare", "Medicaid", "Blue Cross", "Aetna", "UnitedHealth", "Other"])
+    encounterclass = st.selectbox("Encounter Class", list(ENCOUNTER_ENCODING.keys()), format_func=lambda x: x.capitalize())
+    base_encounter_cost = st.number_input("Base Encounter Cost ($)", min_value=0.0, value=100.0, step=100.0)
+    num_procedures = st.number_input("Number of Procedures", min_value=0, value=0)
+    total_proc_base_cost = st.number_input("Total Procedure Base Cost ($)", min_value=0.0, value=0.0, step=100.0)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.subheader("Medical History")
-    num_medications = st.number_input("Number of Current Medications", min_value=0, value=0)
-    num_procedures = st.number_input("Number of Current Procedures", min_value=0, value=0)
+    st.subheader("Medical Information")
+    num_medications = st.number_input("Number of Medications", min_value=0, value=0)
+    total_med_base_cost = st.number_input("Total Medication Base Cost ($)", min_value=0.0, value=0.0, step=100.0)
     num_prior_conditions = st.number_input("Number of Prior Conditions", min_value=0, value=0)
-    num_prior_procedures = st.number_input("Number of Prior Procedures", min_value=0, value=0)
-    num_prior_medications = st.number_input("Number of Prior Medications", min_value=0, value=0)
-    has_chronic_condition = st.checkbox("Has Chronic Condition")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Cost Details
-st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-st.subheader("Cost Details")
-col4, col5 = st.columns(2)
-
-with col4:
-    total_med_base_cost = st.number_input("Total Medication Base Cost ($)", min_value=0.0, value=0.0)
-
-with col5:
-    total_proc_base_cost = st.number_input("Total Procedure Base Cost ($)", min_value=0.0, value=0.0)
-st.markdown('</div>', unsafe_allow_html=True)
-
 # Predict button
-if st.button("Analyze Healthcare Costs"):
-    st.markdown('<h2 class="subheader">Cost Analysis Results</h2>', unsafe_allow_html=True)
-    
-    # Create two columns for visualizations
-    viz_col1, viz_col2 = st.columns(2)
-    
-    with viz_col1:
-        # Cost Prediction Gauge
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number+delta",
-            value=2500,
-            title={'text': "Estimated Out-of-Pocket Cost ($)"},
-            delta={'reference': 3000, 'position': "top"},
-            gauge={
-                'axis': {'range': [None, 5000], 'tickwidth': 1},
-                'bar': {'color': "#1E88E5"},
-                'bgcolor': "white",
-                'borderwidth': 2,
-                'bordercolor': "#E3F2FD",
-                'steps': [
-                    {'range': [0, 1000], 'color': '#E3F2FD'},
-                    {'range': [1000, 3000], 'color': '#90CAF9'},
-                    {'range': [3000, 5000], 'color': '#42A5F5'}],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 2500}}))
-        
-        fig_gauge.update_layout(
-            height=300,
-            font={'color': "#424242", 'family': "Arial"},
-            margin=dict(l=10, r=10, t=30, b=10),
-            paper_bgcolor="rgba(0,0,0,0)"
-        )
-        st.plotly_chart(fig_gauge, use_container_width=True)
+if st.button("Predict Out-of-Pocket Cost"):
+    if model is None:
+        st.error("⚠️ Model not loaded. Please ensure random_forest_model.pkl is available.")
+    else:
+        try:
+            # Create input data exactly matching the training format
+            input_data = pd.DataFrame([{
+                'age': age,
+                'gender': GENDER_ENCODING[gender],
+                'race': RACE_ENCODING[race],
+                'ethnicity': ETHNICITY_ENCODING[ethnicity],
+                'income': income,
+                'encounterclass': ENCOUNTER_ENCODING[encounterclass],
+                'base_encounter_cost': float(base_encounter_cost),
+                'num_procedures': int(num_procedures),
+                'total_proc_base_cost': float(total_proc_base_cost),
+                'num_medications': int(num_medications),
+                'total_med_base_cost': float(total_med_base_cost),
+                'num_prior_conditions': int(num_prior_conditions)
+            }])
 
-    with viz_col2:
-        # Insurance Coverage Comparison
-        insurance_data = {
-            'Provider': ['Medicare', 'Medicaid', 'Blue Cross', 'Aetna', 'UnitedHealth'],
-            'Coverage': [65, 70, 80, 75, 85],
-            'Monthly Premium': [200, 150, 300, 280, 320]
-        }
-        df_insurance = pd.DataFrame(insurance_data)
-        
-        fig_comparison = px.scatter(df_insurance, 
-                                  x='Monthly Premium', 
-                                  y='Coverage',
-                                  size=[40]*5,
-                                  color='Provider',
-                                  title="Insurance Provider Comparison")
-        
-        fig_comparison.update_layout(
-            height=300,
-            font={'color': "#666666", 'family': "Arial"},
-            margin=dict(l=10, r=10, t=30, b=10),
-            paper_bgcolor="white"
-        )
-        st.plotly_chart(fig_comparison, use_container_width=True)
+            # Ensure correct feature order
+            input_data = input_data[FEATURES]
+            
+            # Debug information
+            st.sidebar.write("Input Data Preview:")
+            st.sidebar.write(input_data)
+            
+            # Make prediction
+            predicted_cost = model.predict(input_data)[0]
+            
+            # Ensure non-negative prediction
+            predicted_cost = max(0, predicted_cost)
 
-    # Cost Breakdown and Insights
-    st.markdown('<h2 class="subheader">Detailed Analysis</h2>', unsafe_allow_html=True)
-    col6, col7, col8 = st.columns(3)
-    
-    with col6:
-        st.markdown("""
-            <div class="metric-card">
-                <p class="metric-label">Base Cost</p>
-                <p class="metric-value">$2,500.00</p>
-                <p style="color: #4CAF50; font-size: 0.9rem;">▼ $500 vs. avg</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col7:
-        st.markdown("""
-            <div class="metric-card">
-                <p class="metric-label">Insurance Coverage</p>
-                <p class="metric-value">70%</p>
-                <p style="color: #4CAF50; font-size: 0.9rem;">▲ 5% higher than avg</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col8:
-        st.markdown("""
-            <div class="metric-card">
-                <p class="metric-label">Your Responsibility</p>
-                <p class="metric-value">$2,500.00</p>
-                <p style="color: #4CAF50; font-size: 0.9rem;">▼ $300 vs. market</p>
-            </div>
-        """, unsafe_allow_html=True)
+            # Display Results
+            st.markdown('<h2 class="subheader">Cost Analysis Results</h2>', unsafe_allow_html=True)
+            
+            # Create two columns for visualizations
+            viz_col1, viz_col2 = st.columns(2)
+            
+            with viz_col1:
+                # Cost Prediction Gauge
+                max_range = max(predicted_cost * 2, 5000)
+                fig_gauge = go.Figure(go.Indicator(
+                    mode="gauge+number+delta",
+                    value=predicted_cost,
+                    number={'prefix': "$", 'valueformat': ",.2f"},
+                    title={'text': "Estimated Out-of-Pocket Cost"},
+                    delta={'reference': base_encounter_cost * 0.3, 'position': "top", 'valueformat': ",.2f"},
+                    gauge={
+                        'axis': {'range': [0, max_range], 'tickwidth': 1},
+                        'bar': {'color': "#1E88E5"},
+                        'bgcolor': "white",
+                        'borderwidth': 2,
+                        'bordercolor': "#E3F2FD",
+                        'steps': [
+                            {'range': [0, max_range/3], 'color': '#E3F2FD'},
+                            {'range': [max_range/3, max_range*2/3], 'color': '#90CAF9'},
+                            {'range': [max_range*2/3, max_range], 'color': '#42A5F5'}
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': predicted_cost
+                        }
+                    }
+                ))
+                
+                fig_gauge.update_layout(
+                    height=300,
+                    font={'color': "#424242", 'family': "Arial"},
+                    margin=dict(l=10, r=10, t=30, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(fig_gauge, use_container_width=True)
 
-    # Risk Assessment and Recommendations
-    st.markdown('<h2 class="subheader">Insights and Recommendations</h2>', unsafe_allow_html=True)
-    col9, col10 = st.columns(2)
-    
-    with col9:
-        st.markdown("""
-            <div class="insight-card">
-                <h4 style="color: #0277BD; margin-bottom: 1rem;">Risk Assessment</h4>
-                <ul style="list-style-type: none; padding-left: 0;">
-                    <li style="margin-bottom: 0.5rem;">🟢 <strong>Health Risk Score:</strong> Medium-Low</li>
-                    <li style="margin-bottom: 0.5rem;">🟡 <strong>Cost Risk Level:</strong> Moderate</li>
-                    <li style="margin-bottom: 0.5rem;">🟢 <strong>Chronic Condition Impact:</strong> Minimal</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col10:
-        st.markdown("""
-            <div class="insight-card">
-                <h4 style="color: #0277BD; margin-bottom: 1rem;">Recommendations</h4>
-                <ul style="list-style-type: none; padding-left: 0;">
-                    <li style="margin-bottom: 0.5rem;">💡 Consider Blue Cross for better chronic condition coverage</li>
-                    <li style="margin-bottom: 0.5rem;">📈 Preventive care could reduce long-term costs by 15%</li>
-                    <li style="margin-bottom: 0.5rem;">💊 Medication cost optimization available through generic alternatives</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
+            with viz_col2:
+                # Cost Breakdown Pie Chart
+                total_cost = base_encounter_cost + total_proc_base_cost + total_med_base_cost
+                cost_components = {
+                    'Base Encounter': base_encounter_cost,
+                    'Procedures': total_proc_base_cost,
+                    'Medications': total_med_base_cost,
+                    'Estimated Out-of-Pocket': predicted_cost
+                }
+                
+                fig_pie = go.Figure(data=[go.Pie(
+                    labels=list(cost_components.keys()),
+                    values=list(cost_components.values()),
+                    hole=.4,
+                    marker_colors=['#1E88E5', '#90CAF9', '#42A5F5', '#E3F2FD']
+                )])
+                
+                fig_pie.update_layout(
+                    title="Cost Breakdown",
+                    height=300,
+                    font={'color': "#424242", 'family': "Arial"},
+                    paper_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Historical Trends
-    st.markdown('<h2 class="subheader">Cost Trend Analysis</h2>', unsafe_allow_html=True)
-    dates = pd.date_range(start='2023-01-01', end='2023-12-31', freq='M')
-    costs = np.random.normal(2500, 200, len(dates))
-    trend_data = pd.DataFrame({'Date': dates, 'Cost': costs})
-    
-    fig_trend = px.line(trend_data, x='Date', y='Cost',
-                        title='Projected Cost Trends',
-                        labels={'Cost': 'Monthly Healthcare Costs ($)', 'Date': 'Timeline'})
-    fig_trend.update_layout(
-        height=400,
-        font={'color': "#424242", 'family': "Arial"},
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        title_font_color="#0277BD"
-    )
-    fig_trend.update_xaxes(gridcolor="#E3F2FD")
-    fig_trend.update_yaxes(gridcolor="#E3F2FD")
-    st.plotly_chart(fig_trend, use_container_width=True)
+            # Cost Breakdown and Insights
+            st.markdown('<h2 class="subheader">Detailed Analysis</h2>', unsafe_allow_html=True)
+            col6, col7, col8 = st.columns(3)
+            
+            with col6:
+                st.markdown(f"""
+                    <div class="metric-card">
+                        <p class="metric-label">Total Base Cost</p>
+                        <p class="metric-value">${total_cost:,.2f}</p>
+                        <p style="color: #4CAF50; font-size: 0.9rem;">Total before insurance</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col7:
+                coverage_percentage = ((total_cost - predicted_cost) / total_cost * 100) if total_cost > 0 else 0
+                st.markdown(f"""
+                    <div class="metric-card">
+                        <p class="metric-label">Estimated Coverage</p>
+                        <p class="metric-value">{coverage_percentage:.1f}%</p>
+                        <p style="color: #4CAF50; font-size: 0.9rem;">Based on prediction</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col8:
+                st.markdown(f"""
+                    <div class="metric-card">
+                        <p class="metric-label">Your Responsibility</p>
+                        <p class="metric-value">${predicted_cost:,.2f}</p>
+                        <p style="color: #4CAF50; font-size: 0.9rem;">Estimated out-of-pocket</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            # Risk Factors and Recommendations
+            st.markdown('<h2 class="subheader">Risk Factors & Recommendations</h2>', unsafe_allow_html=True)
+            col9, col10 = st.columns(2)
+            
+            with col9:
+                st.markdown(f"""
+                    <div class="insight-card">
+                        <h4 style="color: #0277BD; margin-bottom: 1rem;">Cost Impact Factors</h4>
+                        <ul style="list-style-type: none; padding-left: 0;">
+                            <li style="margin-bottom: 0.5rem;">🏥 <strong>Encounter Type:</strong> {encounterclass.capitalize()}</li>
+                            <li style="margin-bottom: 0.5rem;">💊 <strong>Medications:</strong> {num_medications} prescribed (${total_med_base_cost:,.2f})</li>
+                            <li style="margin-bottom: 0.5rem;">🔬 <strong>Procedures:</strong> {num_procedures} scheduled (${total_proc_base_cost:,.2f})</li>
+                            <li style="margin-bottom: 0.5rem;">📋 <strong>Prior Conditions:</strong> {num_prior_conditions}</li>
+                        </ul>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col10:
+                cost_ratio = predicted_cost / total_cost if total_cost > 0 else 0
+                recommendations = []
+                
+                if cost_ratio > 0.4:
+                    recommendations.append("💡 Consider reviewing insurance coverage options")
+                if num_medications > 2:
+                    recommendations.append("💊 Discuss generic medication alternatives")
+                if num_procedures > 0:
+                    recommendations.append("🏥 Review procedure necessity and timing")
+                if total_cost > 5000:
+                    recommendations.append("💳 Inquire about payment plan options")
+                if num_prior_conditions > 3:
+                    recommendations.append("📋 Schedule preventive care consultation")
+                
+                recommendations_html = "\n".join([
+                    f'<li style="margin-bottom: 0.5rem;">{rec}</li>'
+                    for rec in recommendations
+                ])
+                
+                st.markdown(f"""
+                    <div class="insight-card">
+                        <h4 style="color: #0277BD; margin-bottom: 1rem;">Recommendations</h4>
+                        <ul style="list-style-type: none; padding-left: 0;">
+                            {recommendations_html}
+                        </ul>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+        except Exception as e:
+            st.error(f"⚠️ Error making prediction: {str(e)}")
+            st.error("Please check if all input values are in the expected format and range.")
+            st.error(f"Input data shape: {input_data.shape if 'input_data' in locals() else 'unknown'}")
+            st.error("Features used: " + ", ".join(FEATURES))
 
 # Footer
 st.markdown("""
     <div class="highlight-box" style="margin-top: 2rem;">
         <p style="color: #666666; text-align: center; margin-bottom: 0;">
             ⚠️ This is an estimation tool. Actual costs may vary based on specific insurance plans and provider policies.
-            <br>Updated with real-time market data and AI-powered predictions.
+            <br>Predictions are based on historical data and current market trends.
         </p>
     </div>
 """, unsafe_allow_html=True) 
