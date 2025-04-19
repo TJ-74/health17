@@ -12,7 +12,7 @@ try:
     XGBOOST_AVAILABLE = True
 except ImportError:
     XGBOOST_AVAILABLE = False
-    st.error("⚠️ XGBoost is not installed. Please run: pip install xgboost")
+    st.error("⚠️ XGBoost is not installed. Please run: pip install xgboost==1.7.6")
     st.stop()
 
 # Set page configuration - MUST be the first Streamlit command
@@ -34,9 +34,16 @@ TARGET = 'out_of_pocket'
 # Load the trained model
 try:
     model = joblib.load('xgboost_out_of_pocket_model.pkl')
+    # Convert to CPU if needed
+    if hasattr(model, 'get_booster'):
+        try:
+            model.get_booster().set_param({'predictor': 'cpu_predictor'})
+        except:
+            pass  # Ignore if setting parameter fails
     st.sidebar.success('✅ Model loaded successfully')
 except Exception as e:
     st.sidebar.error('❌ Error loading model: Make sure xgboost_out_of_pocket_model.pkl is in the same directory')
+    st.sidebar.error(f'Error details: {str(e)}')
     model = None
 
 # Label Encodings
