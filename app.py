@@ -5,7 +5,15 @@ import plotly.express as px
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import joblib
-from sklearn.ensemble import RandomForestRegressor
+
+# Try to import XGBoost, show a friendly error if not installed
+try:
+    import xgboost as xgb
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+    st.error("⚠️ XGBoost is not installed. Please run: pip install xgboost")
+    st.stop()
 
 # Set page configuration - MUST be the first Streamlit command
 st.set_page_config(
@@ -15,20 +23,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Define the features used in the model
+# Define the features used in the model - Order must match exactly with the model's expected order
 FEATURES = [
-    'age', 'gender', 'race', 'ethnicity', 'income', 'encounterclass',
-    'base_encounter_cost', 'num_procedures', 'total_proc_base_cost',
-    'num_medications', 'total_med_base_cost', 'num_prior_conditions'
+    'payer_name', 'age', 'gender', 'race', 'ethnicity', 'income', 
+    'encounterclass', 'base_encounter_cost', 'num_procedures', 
+    'total_proc_base_cost', 'num_prior_conditions'
 ]
 TARGET = 'out_of_pocket'
 
 # Load the trained model
 try:
-    model = joblib.load('random_forest_model.pkl')
+    model = joblib.load('xgboost_out_of_pocket_model.pkl')
     st.sidebar.success('✅ Model loaded successfully')
 except Exception as e:
-    st.sidebar.error('❌ Error loading model: Make sure random_forest_model.pkl is in the same directory')
+    st.sidebar.error('❌ Error loading model: Make sure xgboost_out_of_pocket_model.pkl is in the same directory')
     model = None
 
 # Label Encodings
@@ -160,14 +168,7 @@ st.markdown("""
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/000000/hospital-2.png", width=100)
     st.markdown('<p class="custom-header" style="font-size: 1.5rem;">User Dashboard</p>', unsafe_allow_html=True)
-    user_type = st.radio("Select User Type", ["Patient", "Insurance Provider"])
-    
-    # Add payer selection to sidebar
-    payer_name = st.selectbox(
-        "Insurance Provider",
-        options=list(PAYER_ENCODING.keys()),
-        index=0
-    )
+    user_type = st.radio("Select User Type", ["Patient", "Insurance Provider"], key="user_type_radio")
     
     st.markdown("---")
     if user_type == "Insurance Provider":
@@ -192,38 +193,45 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.subheader("Demographics")
-    age = st.number_input("Age", min_value=0, max_value=120, value=30)
-    gender = st.selectbox("Gender", ["F", "M"])
-    race = st.selectbox("Race", list(RACE_ENCODING.keys()), format_func=lambda x: x.capitalize())
-    ethnicity = st.selectbox("Ethnicity", list(ETHNICITY_ENCODING.keys()), format_func=lambda x: x.capitalize())
-    income = st.number_input("Annual Income ($)", min_value=0, value=50000, step=1000)
+    age = st.number_input("Age", min_value=0, max_value=120, value=30, key="age_input")
+    gender = st.selectbox("Gender", ["F", "M"], key="gender_select")
+    race = st.selectbox("Race", list(RACE_ENCODING.keys()), format_func=lambda x: x.capitalize(), key="race_select")
+    ethnicity = st.selectbox("Ethnicity", list(ETHNICITY_ENCODING.keys()), format_func=lambda x: x.capitalize(), key="ethnicity_select")
+    income = st.number_input("Annual Income ($)", min_value=0, value=50000, step=1000, key="income_input")
+    payer_name = st.selectbox("Insurance Provider", list(PAYER_ENCODING.keys()), key="payer_select")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.subheader("Encounter Details")
-    encounterclass = st.selectbox("Encounter Class", list(ENCOUNTER_ENCODING.keys()), format_func=lambda x: x.capitalize())
-    base_encounter_cost = st.number_input("Base Encounter Cost ($)", min_value=0.0, value=100.0, step=100.0)
-    num_procedures = st.number_input("Number of Procedures", min_value=0, value=0)
-    total_proc_base_cost = st.number_input("Total Procedure Base Cost ($)", min_value=0.0, value=0.0, step=100.0)
+    encounterclass = st.selectbox("Encounter Class", list(ENCOUNTER_ENCODING.keys()), format_func=lambda x: x.capitalize(), key="encounter_select")
+    base_encounter_cost = st.number_input("Base Encounter Cost ($)", min_value=0.0, value=100.0, step=100.0, key="base_cost_input")
+    num_procedures = st.number_input("Number of Procedures", min_value=0, value=0, key="procedures_input")
+    total_proc_base_cost = st.number_input("Total Procedure Base Cost ($)", min_value=0.0, value=0.0, step=100.0, key="proc_cost_input")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.subheader("Medical Information")
-    num_medications = st.number_input("Number of Medications", min_value=0, value=0)
-    total_med_base_cost = st.number_input("Total Medication Base Cost ($)", min_value=0.0, value=0.0, step=100.0)
-    num_prior_conditions = st.number_input("Number of Prior Conditions", min_value=0, value=0)
+    st.subheader("Medical History")
+    num_prior_conditions = st.number_input("Number of Prior Conditions", min_value=0, value=0, key="conditions_input")
+    st.markdown("""
+        <div style="padding: 1rem; background-color: #f8f9fa; border-radius: 5px; margin-top: 1rem;">
+            <p style="color: #666666; margin-bottom: 0;">
+                ℹ️ The number of prior conditions helps in assessing overall health status and potential cost implications.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Predict button
 if st.button("Predict Out-of-Pocket Cost"):
     if model is None:
-        st.error("⚠️ Model not loaded. Please ensure random_forest_model.pkl is available.")
+        st.error("⚠️ Model not loaded. Please ensure xgboost_out_of_pocket_model.pkl is available.")
     else:
         try:
-            # Create input data exactly matching the training format
-            input_data = pd.DataFrame([{
+            # Create input data dictionary with all features
+            input_dict = {
+                'payer_name': PAYER_ENCODING[payer_name],
                 'age': age,
                 'gender': GENDER_ENCODING[gender],
                 'race': RACE_ENCODING[race],
@@ -233,17 +241,16 @@ if st.button("Predict Out-of-Pocket Cost"):
                 'base_encounter_cost': float(base_encounter_cost),
                 'num_procedures': int(num_procedures),
                 'total_proc_base_cost': float(total_proc_base_cost),
-                'num_medications': int(num_medications),
-                'total_med_base_cost': float(total_med_base_cost),
                 'num_prior_conditions': int(num_prior_conditions)
-            }])
-
-            # Ensure correct feature order
-            input_data = input_data[FEATURES]
+            }
+            
+            # Create DataFrame with exact feature order
+            input_data = pd.DataFrame([input_dict])[FEATURES]
             
             # Debug information
             st.sidebar.write("Input Data Preview:")
             st.sidebar.write(input_data)
+            st.sidebar.write("Feature Order:", list(input_data.columns))
             
             # Make prediction
             predicted_cost = model.predict(input_data)[0]
@@ -295,11 +302,10 @@ if st.button("Predict Out-of-Pocket Cost"):
 
             with viz_col2:
                 # Cost Breakdown Pie Chart
-                total_cost = base_encounter_cost + total_proc_base_cost + total_med_base_cost
+                total_cost = base_encounter_cost + total_proc_base_cost
                 cost_components = {
                     'Base Encounter': base_encounter_cost,
                     'Procedures': total_proc_base_cost,
-                    'Medications': total_med_base_cost,
                     'Estimated Out-of-Pocket': predicted_cost
                 }
                 
@@ -307,7 +313,7 @@ if st.button("Predict Out-of-Pocket Cost"):
                     labels=list(cost_components.keys()),
                     values=list(cost_components.values()),
                     hole=.4,
-                    marker_colors=['#1E88E5', '#90CAF9', '#42A5F5', '#E3F2FD']
+                    marker_colors=['#1E88E5', '#90CAF9', '#E3F2FD']
                 )])
                 
                 fig_pie.update_layout(
@@ -360,9 +366,9 @@ if st.button("Predict Out-of-Pocket Cost"):
                         <h4 style="color: #0277BD; margin-bottom: 1rem;">Cost Impact Factors</h4>
                         <ul style="list-style-type: none; padding-left: 0;">
                             <li style="margin-bottom: 0.5rem;">🏥 <strong>Encounter Type:</strong> {encounterclass.capitalize()}</li>
-                            <li style="margin-bottom: 0.5rem;">💊 <strong>Medications:</strong> {num_medications} prescribed (${total_med_base_cost:,.2f})</li>
                             <li style="margin-bottom: 0.5rem;">🔬 <strong>Procedures:</strong> {num_procedures} scheduled (${total_proc_base_cost:,.2f})</li>
                             <li style="margin-bottom: 0.5rem;">📋 <strong>Prior Conditions:</strong> {num_prior_conditions}</li>
+                            <li style="margin-bottom: 0.5rem;">🏢 <strong>Insurance Provider:</strong> {payer_name}</li>
                         </ul>
                     </div>
                 """, unsafe_allow_html=True)
@@ -373,14 +379,15 @@ if st.button("Predict Out-of-Pocket Cost"):
                 
                 if cost_ratio > 0.4:
                     recommendations.append("💡 Consider reviewing insurance coverage options")
-                if num_medications > 2:
-                    recommendations.append("💊 Discuss generic medication alternatives")
                 if num_procedures > 0:
                     recommendations.append("🏥 Review procedure necessity and timing")
                 if total_cost > 5000:
                     recommendations.append("💳 Inquire about payment plan options")
                 if num_prior_conditions > 3:
                     recommendations.append("📋 Schedule preventive care consultation")
+                if payer_name == 'NO_INSURANCE':
+                    recommendations.append("🏥 Consider applying for Medicaid or Medicare if eligible")
+                    recommendations.append("💡 Research marketplace insurance options")
                 
                 recommendations_html = "\n".join([
                     f'<li style="margin-bottom: 0.5rem;">{rec}</li>'
