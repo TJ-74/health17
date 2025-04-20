@@ -23,6 +23,157 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS for dark theme
+st.markdown("""
+    <style>
+    /* Main theme colors */
+    :root {
+        --primary-color: #00B4D8;
+        --secondary-color: #90E0EF;
+        --background-color: #0A192F;
+        --card-background: #172A45;
+        --text-color: #E6F1FF;
+        --muted-text: #8892B0;
+        --border-color: #233554;
+        --hover-color: #112240;
+    }
+
+    /* Global styles */
+    .main {
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+
+    .stApp {
+        background-color: var(--background-color);
+    }
+
+    /* Header styles */
+    .custom-header {
+        color: var(--primary-color);
+        font-size: 2.4rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.7rem;
+        border-bottom: 2px solid var(--border-color);
+        text-shadow: 0 0 10px rgba(0,180,216,0.3);
+    }
+
+    .subheader {
+        color: var(--secondary-color);
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 1.5rem 0;
+        text-shadow: 0 0 8px rgba(144,224,239,0.3);
+    }
+
+    /* Card styles */
+    .metric-card {
+        background-color: var(--card-background);
+        border-radius: 12px;
+        padding: 1.8rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        background-color: var(--hover-color);
+    }
+
+    .insight-card {
+        background-color: var(--card-background);
+        border-left: 4px solid var(--primary-color);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0 12px 12px 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Text styles */
+    .info-text {
+        color: var(--muted-text);
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    .highlight-box {
+        background-color: var(--hover-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        text-shadow: 0 0 10px rgba(0,180,216,0.3);
+    }
+
+    .metric-label {
+        font-size: 1rem;
+        color: var(--muted-text);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Button styles */
+    .stButton>button {
+        width: 100%;
+        background-color: var(--primary-color);
+        color: var(--text-color);
+        border-radius: 8px;
+        height: 3.5em;
+        margin-top: 2em;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .stButton>button:hover {
+        background-color: var(--secondary-color);
+        color: var(--background-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,180,216,0.3);
+    }
+
+    /* Input fields */
+    .stSelectbox>div>div {
+        background-color: var(--card-background);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    .stNumberInput>div>div>input {
+        background-color: var(--card-background);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    /* Sidebar */
+    .sidebar .stRadio > label {
+        background-color: var(--card-background);
+        padding: 12px;
+        border-radius: 8px;
+        margin: 8px 0;
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+    }
+
+    .sidebar .stRadio > label:hover {
+        background-color: var(--hover-color);
+        border-color: var(--primary-color);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Define the features used in the model - Order must match exactly with the model's expected order
 FEATURES = [
     'payer_name', 'age', 'gender', 'race', 'ethnicity', 'income', 
@@ -87,89 +238,337 @@ ENCOUNTER_ENCODING = {
     'wellness': 7
 }
 
-# Custom CSS to make the app look more professional
-st.markdown("""
-    <style>
-    .main {
-        padding: 2rem;
-    }
-    .stButton>button {
-        width: 100%;
-        background-color: #0083B8;
-        color: white;
-        border-radius: 5px;
-        height: 3em;
-        margin-top: 2em;
-    }
-    .stSelectbox {
-        margin-bottom: 1em;
-    }
-    .st-emotion-cache-1y4p8pa {
-        max-width: 100%;
-    }
-    div.block-container {
-        padding-top: 2rem;
-    }
-    .metric-card {
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        margin-bottom: 1rem;
-        border: 1px solid #e9ecef;
-    }
-    .insight-card {
-        background-color: #f8f9fa;
-        border-left: 4px solid #0083B8;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 0 5px 5px 0;
-    }
-    .custom-header {
-        color: #1E88E5;
-        font-size: 2.2rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #E3F2FD;
-    }
-    .subheader {
-        color: #0277BD;
-        font-size: 1.5rem;
-        font-weight: 500;
-        margin: 1rem 0;
-    }
-    .info-text {
-        color: #424242;
-        font-size: 1rem;
-        line-height: 1.6;
-    }
-    .highlight-box {
-        background-color: #E3F2FD;
-        border-radius: 8px;
-        padding: 1.2rem;
-        margin: 1rem 0;
-        border: 1px solid #BBDEFB;
-    }
-    .metric-value {
-        font-size: 1.8rem;
-        font-weight: 600;
-        color: #0277BD;
-    }
-    .metric-label {
-        font-size: 0.9rem;
-        color: #616161;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .sidebar .stRadio > label {
-        background-color: #f8f9fa;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 5px 0;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# Update the gauge chart colors and style
+def create_gauge_chart(value, max_range, reference):
+    return go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=value,
+        number={
+            'prefix': "$",
+            'valueformat': ",.2f",
+            'font': {'color': "#E6F1FF", 'size': 28, 'family': "Arial"}
+        },
+        title={
+            'text': "Estimated Out-of-Pocket Cost",
+            'font': {'color': "#90E0EF", 'size': 20, 'family': "Arial"}
+        },
+        delta={
+            'reference': reference,
+            'position': "top",
+            'valueformat': ",.2f",
+            'font': {'color': "#8892B0"}
+        },
+        gauge={
+            'axis': {
+                'range': [0, max_range],
+                'tickwidth': 1,
+                'tickcolor': "#233554",
+                'tickfont': {'color': "#8892B0"}
+            },
+            'bar': {'color': "#00B4D8"},
+            'bgcolor': "#172A45",
+            'borderwidth': 2,
+            'bordercolor': "#233554",
+            'steps': [
+                {'range': [0, max_range/3], 'color': "#112240"},
+                {'range': [max_range/3, max_range*2/3], 'color': "#1D3461"},
+                {'range': [max_range*2/3, max_range], 'color': "#2A4E84"}
+            ],
+            'threshold': {
+                'line': {'color': "#FF6B6B", 'width': 4},
+                'thickness': 0.75,
+                'value': value
+            }
+        }
+    ))
+
+# Update the pie chart colors and style
+def create_pie_chart(cost_components):
+    return go.Figure(data=[go.Pie(
+        labels=list(cost_components.keys()),
+        values=list(cost_components.values()),
+        hole=.6,
+        marker_colors=['#00B4D8', '#0081A7', '#48CAE4'],
+        textfont={'color': "#E6F1FF", 'size': 14},
+        hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<extra></extra>"
+    )])
+
+# Add function to create insurance comparison bar chart
+def create_insurance_comparison_chart(current_inputs, model, features):
+    # Store predictions for each insurance provider
+    predictions = []
+    for provider, code in PAYER_ENCODING.items():
+        # Copy current inputs and change only the insurance provider
+        provider_inputs = current_inputs.copy()
+        provider_inputs['payer_name'] = code
+        
+        # Create DataFrame with exact feature order
+        input_df = pd.DataFrame([provider_inputs])[features]
+        
+        # Make prediction
+        pred_cost = model.predict(input_df)[0]
+        pred_cost = max(0, pred_cost)  # Ensure non-negative
+        
+        predictions.append({
+            'Insurance Provider': provider,
+            'Estimated Cost': pred_cost
+        })
+    
+    # Create DataFrame for plotting
+    df_predictions = pd.DataFrame(predictions)
+    
+    # Create bar chart
+    fig = go.Figure(data=[
+        go.Bar(
+            x=df_predictions['Insurance Provider'],
+            y=df_predictions['Estimated Cost'],
+            marker_color='#00B4D8',
+            hovertemplate="<b>%{x}</b><br>$%{y:,.2f}<extra></extra>",
+            text=df_predictions['Estimated Cost'].apply(lambda x: f'${x:,.2f}'),
+            textposition='auto',
+        )
+    ])
+    
+    # Update layout
+    fig.update_layout(
+        title={
+            'text': "Cost Comparison Across Insurance Providers",
+            'font': {'color': "#90E0EF", 'size': 20},
+            'y': 0.95
+        },
+        xaxis={
+            'title': None,
+            'tickangle': -45,
+            'tickfont': {'color': "#E6F1FF"},
+            'gridcolor': "#233554",
+            'showgrid': False
+        },
+        yaxis={
+            'title': "Estimated Out-of-Pocket Cost ($)",
+            'tickformat': "$,.0f",
+            'tickfont': {'color': "#E6F1FF"},
+            'gridcolor': "#233554",
+            'ticksuffix': " "
+        },
+        paper_bgcolor="#0A192F",
+        plot_bgcolor="#0A192F",
+        height=400,
+        showlegend=False,
+        margin=dict(l=60, r=20, t=80, b=120),
+        font={'color': "#E6F1FF"}
+    )
+    
+    # Add current provider marker
+    current_pred = df_predictions[df_predictions['Insurance Provider'] == payer_name]['Estimated Cost'].values[0]
+    fig.add_trace(go.Scatter(
+        x=[payer_name],
+        y=[current_pred],
+        mode='markers',
+        marker=dict(
+            symbol='star',
+            size=20,
+            color='#FF6B6B',
+        ),
+        name='Current Selection',
+        hovertemplate="<b>Current Selection</b><br>$%{y:,.2f}<extra></extra>"
+    ))
+    
+    return fig
+
+# Add function to create income vs cost line graph
+def create_income_analysis_chart(current_inputs, model, features):
+    # Generate income range from 5000 to 50000 with 5k steps
+    income_range = list(range(5000, 55000, 5000))
+    predictions = []
+    
+    # Make predictions for each income level
+    for income in income_range:
+        # Copy current inputs and change only the income
+        income_inputs = current_inputs.copy()
+        income_inputs['income'] = income
+        
+        # Create DataFrame with exact feature order
+        input_df = pd.DataFrame([income_inputs])[features]
+        
+        # Make prediction
+        pred_cost = model.predict(input_df)[0]
+        pred_cost = max(0, pred_cost)  # Ensure non-negative
+        
+        predictions.append({
+            'Annual Income': income,
+            'Estimated Cost': pred_cost
+        })
+    
+    # Create DataFrame for plotting
+    df_predictions = pd.DataFrame(predictions)
+    
+    # Create line chart
+    fig = go.Figure()
+    
+    # Add line
+    fig.add_trace(go.Scatter(
+        x=df_predictions['Annual Income'],
+        y=df_predictions['Estimated Cost'],
+        mode='lines+markers',
+        name='Estimated Cost',
+        line=dict(color='#00B4D8', width=3),
+        marker=dict(size=8, symbol='circle'),
+        hovertemplate="<b>Income: $%{x:,.0f}</b><br>Cost: $%{y:,.2f}<extra></extra>"
+    ))
+    
+    # Add current income point
+    fig.add_trace(go.Scatter(
+        x=[current_inputs['income']],
+        y=[df_predictions[df_predictions['Annual Income'] == 
+           (current_inputs['income'] - current_inputs['income'] % 5000)]['Estimated Cost'].values[0]],
+        mode='markers',
+        name='Current Income',
+        marker=dict(
+            symbol='star',
+            size=20,
+            color='#FF6B6B',
+        ),
+        hovertemplate="<b>Your Income: $%{x:,.0f}</b><br>Cost: $%{y:,.2f}<extra></extra>"
+    ))
+    
+    # Update layout
+    fig.update_layout(
+        title={
+            'text': "Income vs. Out-of-Pocket Cost Analysis",
+            'font': {'color': "#90E0EF", 'size': 20},
+            'y': 0.95
+        },
+        xaxis={
+            'title': "Annual Income ($)",
+            'tickformat': "$,.0f",
+            'tickfont': {'color': "#E6F1FF"},
+            'gridcolor': "#233554",
+            'ticksuffix': " "
+        },
+        yaxis={
+            'title': "Estimated Out-of-Pocket Cost ($)",
+            'tickformat': "$,.0f",
+            'tickfont': {'color': "#E6F1FF"},
+            'gridcolor': "#233554",
+            'ticksuffix': " "
+        },
+        paper_bgcolor="#0A192F",
+        plot_bgcolor="#0A192F",
+        height=400,
+        showlegend=True,
+        legend={
+            'font': {'color': "#E6F1FF"},
+            'bgcolor': "#172A45",
+            'bordercolor': "#233554"
+        },
+        margin=dict(l=60, r=20, t=80, b=60),
+        font={'color': "#E6F1FF"}
+    )
+    
+    return fig
+
+# Add function to create age vs cost line graph
+def create_age_analysis_chart(current_inputs, model, features):
+    # Generate age range from 1 to 70 with 4-year steps
+    age_range = list(range(1, 71, 4))
+    predictions = []
+    
+    try:
+        # Make predictions for each age
+        for age in age_range:
+            # Copy current inputs and change only the age
+            age_inputs = current_inputs.copy()
+            age_inputs['age'] = age
+            
+            # Create DataFrame with exact feature order
+            input_df = pd.DataFrame([age_inputs])[features]
+            
+            # Make prediction
+            pred_cost = model.predict(input_df)[0]
+            pred_cost = max(0, pred_cost)  # Ensure non-negative
+            
+            predictions.append({
+                'Age': age,
+                'Estimated Cost': pred_cost
+            })
+        
+        # Create DataFrame for plotting
+        df_predictions = pd.DataFrame(predictions)
+        
+        # Create line chart
+        fig = go.Figure()
+        
+        # Add line
+        fig.add_trace(go.Scatter(
+            x=df_predictions['Age'],
+            y=df_predictions['Estimated Cost'],
+            mode='lines+markers',
+            name='Estimated Cost',
+            line=dict(color='#48CAE4', width=3),
+            marker=dict(size=8, symbol='circle'),
+            hovertemplate="<b>Age: %{x} years</b><br>Cost: $%{y:,.2f}<extra></extra>"
+        ))
+        
+        # Add current age point - with improved handling
+        current_age = current_inputs['age']
+        
+        # Make a specific prediction for the current age
+        current_age_inputs = current_inputs.copy()
+        current_age_inputs['age'] = current_age
+        current_age_df = pd.DataFrame([current_age_inputs])[features]
+        current_age_prediction = max(0, model.predict(current_age_df)[0])
+        
+        fig.add_trace(go.Scatter(
+            x=[current_age],
+            y=[current_age_prediction],
+            mode='markers',
+            name='Current Age',
+            marker=dict(
+                symbol='star',
+                size=20,
+                color='#FF6B6B',
+            ),
+            hovertemplate="<b>Your Age: %{x} years</b><br>Cost: $%{y:,.2f}<extra></extra>"
+        ))
+        
+        # Update layout
+        fig.update_layout(
+            title={
+                'text': "Age vs. Out-of-Pocket Cost Analysis",
+                'font': {'color': "#90E0EF", 'size': 20},
+                'y': 0.95
+            },
+            xaxis={
+                'title': "Age (years)",
+                'tickfont': {'color': "#E6F1FF"},
+                'gridcolor': "#233554",
+                'dtick': 5  # Show tick marks every 5 years
+            },
+            yaxis={
+                'title': "Estimated Out-of-Pocket Cost ($)",
+                'tickformat': "$,.0f",
+                'tickfont': {'color': "#E6F1FF"},
+                'gridcolor': "#233554",
+                'ticksuffix': " "
+            },
+            paper_bgcolor="#0A192F",
+            plot_bgcolor="#0A192F",
+            height=400,
+            showlegend=True,
+            legend={
+                'font': {'color': "#E6F1FF"},
+                'bgcolor': "#172A45",
+                'bordercolor': "#233554"
+            },
+            margin=dict(l=60, r=20, t=80, b=60),
+            font={'color': "#E6F1FF"}
+        )
+        
+        return fig
+    except Exception as e:
+        st.error(f"Error in age analysis: {str(e)}")
+        st.error("Unable to generate age analysis chart. Please check your inputs.")
+        return None
 
 # Sidebar for user type selection
 with st.sidebar:
@@ -272,43 +671,17 @@ if st.button("Predict Out-of-Pocket Cost"):
             viz_col1, viz_col2 = st.columns(2)
             
             with viz_col1:
-                # Cost Prediction Gauge
                 max_range = max(predicted_cost * 2, 5000)
-                fig_gauge = go.Figure(go.Indicator(
-                    mode="gauge+number+delta",
-                    value=predicted_cost,
-                    number={'prefix': "$", 'valueformat': ",.2f"},
-                    title={'text': "Estimated Out-of-Pocket Cost"},
-                    delta={'reference': base_encounter_cost * 0.3, 'position': "top", 'valueformat': ",.2f"},
-                    gauge={
-                        'axis': {'range': [0, max_range], 'tickwidth': 1},
-                        'bar': {'color': "#1E88E5"},
-                        'bgcolor': "white",
-                        'borderwidth': 2,
-                        'bordercolor': "#E3F2FD",
-                        'steps': [
-                            {'range': [0, max_range/3], 'color': '#E3F2FD'},
-                            {'range': [max_range/3, max_range*2/3], 'color': '#90CAF9'},
-                            {'range': [max_range*2/3, max_range], 'color': '#42A5F5'}
-                        ],
-                        'threshold': {
-                            'line': {'color': "red", 'width': 4},
-                            'thickness': 0.75,
-                            'value': predicted_cost
-                        }
-                    }
-                ))
-                
+                fig_gauge = create_gauge_chart(predicted_cost, max_range, base_encounter_cost * 0.3)
                 fig_gauge.update_layout(
-                    height=300,
-                    font={'color': "#424242", 'family': "Arial"},
+                    height=350,
+                    paper_bgcolor="#0A192F",
+                    plot_bgcolor="#0A192F",
                     margin=dict(l=10, r=10, t=30, b=10),
-                    paper_bgcolor="rgba(0,0,0,0)"
                 )
                 st.plotly_chart(fig_gauge, use_container_width=True)
 
             with viz_col2:
-                # Cost Breakdown Pie Chart
                 total_cost = base_encounter_cost + total_proc_base_cost
                 cost_components = {
                     'Base Encounter': base_encounter_cost,
@@ -316,20 +689,88 @@ if st.button("Predict Out-of-Pocket Cost"):
                     'Estimated Out-of-Pocket': predicted_cost
                 }
                 
-                fig_pie = go.Figure(data=[go.Pie(
-                    labels=list(cost_components.keys()),
-                    values=list(cost_components.values()),
-                    hole=.4,
-                    marker_colors=['#1E88E5', '#90CAF9', '#E3F2FD']
-                )])
-                
+                fig_pie = create_pie_chart(cost_components)
                 fig_pie.update_layout(
-                    title="Cost Breakdown",
-                    height=300,
-                    font={'color': "#424242", 'family': "Arial"},
-                    paper_bgcolor="rgba(0,0,0,0)"
+                    title={
+                        'text': "Cost Breakdown",
+                        'font': {'color': "#90E0EF", 'size': 20},
+                        'y': 0.95
+                    },
+                    height=350,
+                    paper_bgcolor="#0A192F",
+                    plot_bgcolor="#0A192F",
+                    showlegend=True,
+                    legend={
+                        'font': {'color': "#E6F1FF"},
+                        'bgcolor': "#172A45",
+                        'bordercolor': "#233554"
+                    }
                 )
                 st.plotly_chart(fig_pie, use_container_width=True)
+
+            # Add Insurance Comparison Section
+            st.markdown('<h2 class="subheader">Insurance Provider Comparison</h2>', unsafe_allow_html=True)
+            
+            # Create comparison chart
+            fig_comparison = create_insurance_comparison_chart(input_dict, model, FEATURES)
+            st.plotly_chart(fig_comparison, use_container_width=True)
+            
+            # Add explanation box
+            st.markdown("""
+                <div class="highlight-box">
+                    <p style="color: #E6F1FF; margin-bottom: 0.5rem;">
+                        <strong>💡 Cost Comparison Insights:</strong>
+                    </p>
+                    <p style="color: #8892B0; font-size: 0.9rem; margin-bottom: 0;">
+                        This chart shows estimated out-of-pocket costs across all insurance providers for your specific case.
+                        The red star (⭐) indicates your current selection. Compare different providers to find potential cost savings.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Add Income Analysis Section
+            st.markdown('<h2 class="subheader">Income Impact Analysis</h2>', unsafe_allow_html=True)
+            
+            # Create income analysis chart
+            fig_income = create_income_analysis_chart(input_dict, model, FEATURES)
+            st.plotly_chart(fig_income, use_container_width=True)
+            
+            # Add explanation box
+            st.markdown("""
+                <div class="highlight-box">
+                    <p style="color: #E6F1FF; margin-bottom: 0.5rem;">
+                        <strong>💡 Income Impact Insights:</strong>
+                    </p>
+                    <p style="color: #8892B0; font-size: 0.9rem; margin-bottom: 0;">
+                        This graph shows how estimated out-of-pocket costs vary with different income levels, 
+                        keeping all other factors constant. The red star (⭐) indicates your current income level.
+                        Understanding this relationship can help in financial planning and choosing appropriate insurance coverage.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Add Age Analysis Section
+            st.markdown('<h2 class="subheader">Age Impact Analysis</h2>', unsafe_allow_html=True)
+            
+            # Create age analysis chart with error handling
+            fig_age = create_age_analysis_chart(input_dict, model, FEATURES)
+            if fig_age is not None:
+                st.plotly_chart(fig_age, use_container_width=True)
+                
+                # Add explanation box
+                st.markdown("""
+                    <div class="highlight-box">
+                        <p style="color: #E6F1FF; margin-bottom: 0.5rem;">
+                            <strong>💡 Age Impact Insights:</strong>
+                        </p>
+                        <p style="color: #8892B0; font-size: 0.9rem; margin-bottom: 0;">
+                            This graph illustrates how estimated out-of-pocket costs vary across different age groups, 
+                            keeping all other factors constant. The red star (⭐) marks your current age.
+                            Understanding this relationship can help in long-term healthcare financial planning and 
+                            anticipating potential cost changes as you age.
+                        </p>
+                    </div>
+                """, unsafe_allow_html=True)
 
             # Cost Breakdown and Insights
             st.markdown('<h2 class="subheader">Detailed Analysis</h2>', unsafe_allow_html=True)
@@ -345,21 +786,59 @@ if st.button("Predict Out-of-Pocket Cost"):
                 """, unsafe_allow_html=True)
             
             with col7:
-                coverage_percentage = ((total_cost - predicted_cost) / total_cost * 100) if total_cost > 0 else 0
+                # Calculate coverage amount and percentage
+                if total_cost > 0:
+                    covered_amount = max(0, total_cost - predicted_cost)  # Ensure covered amount is not negative
+                    coverage_percentage = min(100, max(0, (covered_amount / total_cost) * 100))  # Clamp between 0-100%
+                else:
+                    coverage_percentage = 0
+                
+                # Determine coverage level for color coding
+                if coverage_percentage >= 80:
+                    coverage_color = "#4CAF50"  # Green for high coverage
+                elif coverage_percentage >= 50:
+                    coverage_color = "#FFA726"  # Orange for medium coverage
+                else:
+                    coverage_color = "#EF5350"  # Red for low coverage
+                
                 st.markdown(f"""
                     <div class="metric-card">
-                        <p class="metric-label">Estimated Coverage</p>
-                        <p class="metric-value">{coverage_percentage:.1f}%</p>
-                        <p style="color: #4CAF50; font-size: 0.9rem;">Based on prediction</p>
+                        <p class="metric-label">Insurance Coverage</p>
+                        <p class="metric-value" style="color: {coverage_color};">{coverage_percentage:.1f}%</p>
+                        <p style="color: {coverage_color}; font-size: 0.9rem;">
+                            ${covered_amount:,.2f} covered by insurance
+                        </p>
                     </div>
                 """, unsafe_allow_html=True)
             
             with col8:
+                responsibility_percentage = min(100, max(0, (predicted_cost / total_cost * 100))) if total_cost > 0 else 0
                 st.markdown(f"""
                     <div class="metric-card">
                         <p class="metric-label">Your Responsibility</p>
                         <p class="metric-value">${predicted_cost:,.2f}</p>
-                        <p style="color: #4CAF50; font-size: 0.9rem;">Estimated out-of-pocket</p>
+                        <p style="color: var(--muted-text); font-size: 0.9rem;">
+                            {responsibility_percentage:.1f}% of total cost
+                        </p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            # Add a coverage explanation box if needed
+            if coverage_percentage < 20 and payer_name != 'NO_INSURANCE':
+                st.markdown("""
+                    <div class="highlight-box" style="border-left: 4px solid #EF5350;">
+                        <p style="color: #EF5350; margin-bottom: 0.5rem;">
+                            <strong>⚠️ Low Coverage Alert:</strong>
+                        </p>
+                        <p style="color: #8892B0; font-size: 0.9rem; margin-bottom: 0;">
+                            The estimated coverage is unusually low. This might be due to:
+                            <ul style="margin-top: 0.5rem;">
+                                <li>Services not covered under the selected plan</li>
+                                <li>High deductible not yet met</li>
+                                <li>Out-of-network providers</li>
+                            </ul>
+                            Consider consulting with your insurance provider for detailed coverage information.
+                        </p>
                     </div>
                 """, unsafe_allow_html=True)
 
